@@ -1,0 +1,12 @@
+<apex:page >
+  <!-- Begin Default Content REMOVE THIS -->
+  <h1>Congratulations</h1>
+  <apex:form >
+  <apex:InputText >
+  
+  </apex:InputText>
+  </apex:form>
+  
+  This is your new Page: page
+  <!-- End Default Content REMOVE THIS -->
+</apex:page>

@@ -1,0 +1,25 @@
+<apex:page controller="importDataFromCSVController" sidebar="false">
+    <apex:slds />
+<apex:form id="form">
+    <apex:pagemessages />
+
+    <apex:inputFile value="{!csvFileContents}" fileName="{!csvFileName}" />
+    <apex:commandButton value="Import Contact" action="{!importCSVFile}" />
+
+    <apex:pageBlock id="pb" rendered="{!cntList.size >0}">
+           <apex:pageblocktable value="{!cntList}" var="cnt">
+              <apex:column value="{!cnt.LastName}" />
+              <apex:column value="{!cnt.Description	}" />
+              <apex:column value="{!cnt.Active__c}" />
+              <apex:column value="{!cnt.Birthdate}" />
+              <apex:column value="{!cnt.Connected_On__c}" />
+        </apex:pageblocktable>
+     </apex:pageBlock>
+
+</apex:form>
+
+
+
+
+
+</apex:page>

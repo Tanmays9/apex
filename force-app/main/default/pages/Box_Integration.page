@@ -1,0 +1,305 @@
+<apex:page controller="Box_Integration_controller" action="{!checkExistingUsers}" sidebar="hidden">
+    <apex:slds />
+    <script src="https://code.jquery.com/jquery-1.8.2.js"></script>
+
+    <style>
+        #modal section {
+            visibility: hidden;
+        }
+
+        #modal .slds-backdrop {
+            visibility: hidden;
+        }
+        #modal .slds-form-element__help {
+            visibility: hidden;
+            color: red;
+        }
+
+        #header {
+            /* background-color: #0061D5; */
+            padding: 0.5rem;
+            border-radius: 5px;
+        }
+    </style>
+            <apex:form id="form">
+                <apex:actionStatus id="spinner">
+            <apex:facet name="start">
+                <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; opacity: 0.25; z-index: 1000; background-color: gray">
+                    &nbsp;
+                </div>
+                <div style="position: fixed; left: 0; top: 0; bottom: 0; right: 0; z-index: 1001; margin: 15% 50%">
+
+                    <div class="demo-only" style="background-color:#16325c;height:6rem">
+                        <div class="slds-spinner_container">
+                            <div role="status" class="slds-spinner slds-spinner_large slds-spinner_brand">
+                                <span class="slds-assistive-text">Loading</span>
+                                <div class="slds-spinner__dot-a"></div>
+                                <div class="slds-spinner__dot-b"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+            </apex:facet>
+        </apex:actionStatus>
+
+
+
+
+        <div id="modal">
+            <section  role="dialog" tabindex="-1" aria-label="Meaningful description of the modal content" aria-modal="true" aria-describedby="modal-content-id-1"
+                class="slds-modal slds-fade-in-open nameSec">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header slds-modal__header_empty">
+
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <div class="slds-form-element">
+                            <label class="slds-form-element__label" for="text-input-id-1">
+                                <abbr class="slds-required" title="required">* </abbr>Folder Name</label>
+                                <div class="slds-form-element__control">
+                                    <input type="text" id="text-input-id-1" placeholder="New Folder" onchange="return false" onkeypress="if (event.keyCode === 13) {event.preventDefault()}"
+                                        required="" class="textinput slds-input" />
+                                </div>
+                            <div class="slds-form-element__help" id="error-message-unique-id">Enter a value.</div>
+                        </div>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <button class="slds-button slds-button_neutral" onclick="cancelFolder();return false;">Cancel</button>
+                        <button class="slds-button slds-button_brand" onclick="createFolder();return false;">Create</button>
+                        
+                    </footer>
+                </div>
+            </section>
+            <section role="dialog" tabindex="-1" aria-label="Meaningful description of the modal content" aria-modal="true" aria-describedby="modal-content-id-1"
+                class="slds-modal slds-fade-in-open uploadSec">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header slds-modal__header_empty">
+
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <span class="slds-icon_container slds-icon-standard-account ">
+                            <svg aria-hidden="true" class="slds-icon slds-icon--medium slds-p-around_x-medium">
+                                <use xmlns:xlink="http://www.w3.org/2000/xlink" xlink:href="/apexpages/slds/latest/assets/icons/standard-sprite/svg/symbols.svg#file">
+                                </use>
+                            </svg>
+                            <span class="slds-text-heading_small slds-p-around_x-small fileName" style="color:aliceblue" >Account</span>
+                        </span>
+                        <b>
+                            <span class="slds-text-heading_small slds-p-around_x-small fileSize" style="color:rgb(92, 108, 250)" >Account</span> 
+
+                        </b>
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <apex:inputFile styleclass="inputfile" fileName="{!uploadFileName}" value="{!uploadContent}"  onchange="processUploadFile(this)" style="visibility:hidden" ></apex:inputFile>
+
+                        <button class="slds-button slds-button_neutral" onclick="cancelUpload();return false;">Cancel</button>
+                        <!-- <button class="slds-button slds-button_brand" onclick="finalUploadFile();return false;">Upload</button> onclick="finalUploadFile();" -->
+                       <apex:actionRegion >
+                        <apex:commandButton value="Upload" action="{!uploadFileToBox}" styleClass="slds-button slds-button_brand" status="spinner"  ></apex:commandButton>
+
+                       </apex:actionRegion>
+
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+
+        </div>
+        <apex:actionRegion >
+
+            <apex:actionFunction name="folder" action="{!createFolder}" reRender="table, head" status="spinner">
+                <apex:param name="foldername" assignTo="{!folderName}" value=""></apex:param>
+            </apex:actionFunction>
+
+            <apex:outputPanel id="head">
+                <apex:pageMessages id="showmsg"></apex:pageMessages>
+                <!-- {!fileList} {!folderIdToNameMap} {!foldersCount} -->
+
+            <div id="header" class="slds-button_brand">
+
+                <div class="slds-grid ">
+                    <div >
+                        <nav role="navigation" aria-label="Breadcrumbs">
+                            <ol class="slds-breadcrumb slds-list_horizontal slds-wrap">
+                                <apex:repeat value="{!items}" var="Item">
+                                    <li class="slds-breadcrumb__item">
+                                        <apex:commandLink style="color:aliceblue" styleClass="slds-text-heading_small" value="{!navigationItems[Item]}" action="{!openFolder}" status="spinner" reRender="table, head">
+                                            <apex:param name="ItemSelect" value="{!Item}" assignTo="{!selectedFolder}"></apex:param>
+                                        </apex:commandLink>
+                                    </li>
+                                </apex:repeat>
+                            </ol>
+                        </nav>
+                    </div>
+                    <div class="slds-col_bump-left slds-p-right_x-small">
+                        <button class="slds-button slds-button_brand " style="background-color: rgb(25, 85, 148)" onclick="newFolder();return false">New Folder</button>
+                    </div>
+                    <div class="">
+                        <button class="slds-button slds-button_brand" style="background-color: rgb(25, 85, 148)" onclick="$('.inputfile').click(); return false;">Upload File</button>
+                    </div>
+                </div>
+            </div>
+            <apex:outputPanel id="table" rendered="{!fileList.size != 0 || foldersCount != 0}">
+                <table class="slds-table slds-table_cell-buffer slds-table_bordered ">
+                    <tbody>
+                        <thead>
+
+                            <tr class="slds-line-height_reset">
+                                <th class="" scope="col" style="width:3.25rem">
+                                    <div class="slds-truncate slds-assistive-text" title="Icons">Folder/File</div>
+                                </th>
+                                <th class="" scope="col">
+                                    <div class="slds-truncate" title="Opportunity Name">Name</div>
+                                </th>
+                                <th class="" scope="col" style="width:3.25rem">
+                                    <div class="slds-truncate " title="Actions">Actions</div>
+                                </th>
+                            </tr>
+
+                        </thead>
+                        <apex:repeat value="{!folderIdToNameMap}" var="folder">
+                            <tr class="slds-hint-parent">
+                                <td>
+                                        <span class="slds-icon_container slds-icon-standard-account">
+                                            <apex:image url="{!URLFOR($Resource.folderimg)}" width="55" height="55" alt="Description of image here"/>   
+                        
+                                        </span>
+                                        <span class="slds-assistive-text">Account</span>
+                                </td>
+                                <td data-label="Opportunity Name">
+                                    <div class="slds-truncate" title="Cloudhub">
+                                        <apex:commandLink value="{!folderIdToNameMap[folder]}" styleClass="slds-text-heading_small" action="{!openFolder}" status="spinner" reRender="table, head">
+                                            <apex:param name="selectedFolder" value="{!folder}" assignTo="{! selectedFolder}" />
+                                        </apex:commandLink>
+                                    </div>
+                                </td>
+                                <td>
+                                    <apex:commandLink action="{!deleteFolder}" reRender="table, head" status="spinner">
+                                        <apex:param name="DeleteFolder" value="{!folder}" assignTo="{!selectedFolder}"></apex:param>
+                                        <span class="slds-icon_container slds-icon-action-delete">
+                                            <apex:image url="{!URLFOR($Resource.deleteimg)}" width="15" height="15" alt="Description of image here"/>   
+                                        </span>
+                                    </apex:commandLink>
+                                </td>
+                            </tr>
+                        </apex:repeat>
+                        <apex:repeat value="{!fileList}" var="file">
+                            <tr class="slds-hint-parent">
+                                <td>
+                                    <span class="slds-icon_container slds-icon-standard-account">
+                                        <apex:image url="{!URLFOR($Resource.fileimg)}" width="55" height="55" alt="Description of image here"/>   
+                    
+                                    </span>
+                                    <span class="slds-assistive-text">Account</span>
+                                </td>
+                                <td data-label="Opportunity Name">
+                                    <div class="slds-truncate" title="Cloudhub">
+                                        <apex:commandLink value="{!file.Name}" styleClass="slds-text-heading_small" action="{!downloadFile}"  reRender="table, head">
+                                            <apex:param name="selectedSobject" value="{!file.Id}" assignTo="{! selectedFile}" />
+                                        </apex:commandLink>
+                                    </div>
+                                </td>
+                                <td>
+                                    <apex:commandLink action="{!deleteFile}" reRender="table, head" status="spinner">
+                                        <apex:param name="DeleteFile" value="{!file.Id}" assignTo="{!selectedFile}"></apex:param>
+                                        <span class="slds-icon_container slds-icon_container_circle slds-icon-action-delete ">
+                                            <apex:image url="{!URLFOR($Resource.deleteimg)}" width="15" height="15" alt="Description of image here"/>   
+                                        </span>
+                                    </apex:commandLink>
+                                </td>
+                            </tr>
+                        </apex:repeat>
+                    </tbody>
+                </table>
+                
+                <!-- <span class="slds-icon_container slds-icon-standard-account">
+                    <!-- <apex:image url="{!URLFOR($Resource.icons,'icons/icons/file_120.png')}" width="50" height="50" alt="Description of image here"/>    -->
+                    <!-- <img src="{!URLFOR($Resource.icons,'icons/file_120.png')}" height="20" width="20" />
+                    <img src="{!URLFOR($Resource.imagestest, 'images/download-icon.png')}" height="20" width="20" />
+                </span> -->
+
+            </apex:outputPanel>
+            <apex:outputPanel rendered="{!fileList.size == 0 && foldersCount == 0}">
+                <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered">
+                    <thead>
+                        <tr class="slds-line-height_reset">
+                            <th class="" scope="col" style="width:3.25rem">
+                                <div class="slds-truncate" title="norecord">No Folders OR Files To Display</div>
+                            </th>
+                        </tr>
+                    </thead>
+                </table>
+            </apex:outputPanel>
+        </apex:outputPanel>
+
+<apex:outputPanel id="here">
+            <script>
+                function newFolder() {
+                    $('#modal section.nameSec').css("visibility", "visible");
+                    $('#modal .slds-backdrop').css("visibility", "visible");
+                }
+                function cancelFolder() {
+                    $('#modal section.nameSec').css("visibility", "hidden");
+                    $('#modal .slds-backdrop').css("visibility", "hidden");
+                    $('#modal .slds-form-element__help').css("visibility", "hidden");
+                    $('.textinput').val('');
+                }
+                function createFolder() {
+                    var filename = $('.textinput').val();
+                    if (filename == '') {
+                        $('#modal .slds-form-element__help').css("visibility", "visible");
+                        return false;
+                    } else {
+                        $('#modal .slds-form-element__help').css("visibility", "hidden");
+                        folder(filename);
+                        cancelFolder();
+                        return false;
+                    }
+                }
+                function processUploadFile(that){
+                    $('#modal section.uploadSec').css("visibility", "visible");
+                    $('#modal .slds-backdrop').css("visibility", "visible");
+                    var file = that.files[0];
+                    console.log(file.name);
+                    console.log(file.size);
+                    $('span.fileName').text(file.name);
+                    console.log($('span.fileName'));
+                    let size = file.size;
+                    if(size < 1048576){
+                        size = (size/1024).toFixed(2) + " KB ";
+                    }else{
+                        size = (size/1048576).toFixed(2) +" MB ";
+                    }
+                    $('span.fileSize').text(size);
+                }
+                function finalUploadFile(){
+                    $('#modal section.uploadSec').css("visibility", "hidden");
+                    $('#modal .slds-backdrop').css("visibility", "hidden");
+                    console.log('here upload' + '{!uploadContent}');
+                    $('.inputfile').val('');
+
+                }
+                function cancelUpload(){
+                    $('#modal section.uploadSec').css("visibility", "hidden");
+                    $('#modal .slds-backdrop').css("visibility", "hidden");
+                    $('.inputfile').val('');
+                }
+
+                
+
+
+            </script>
+            </apex:outputPanel>
+
+    </apex:actionRegion>
+        
+       
+    </apex:form>
+
+    <script>
+    
+    </script>
+</apex:page>
+<!--  -->

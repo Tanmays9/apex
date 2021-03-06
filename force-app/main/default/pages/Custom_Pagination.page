@@ -1,0 +1,133 @@
+<apex:page controller="Custom_Pagination_Controller" standardStylesheets="false" sidebar="false" id="page" >
+  <apex:slds />
+  
+
+
+  <apex:includeScript value="{! $Resource.CustomPaginationJS}" />
+  <apex:stylesheet value="{! $Resource.CustomPaginationcss}"/>
+  
+  <apex:outputPanel id="objectselection">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
+
+    <div class="slds-scope">
+      <apex:form id="objectSelect">
+        
+        <header class="slds-page-header " id="headerstyle">
+          <div class="slds-page-header__row">
+            <div class="slds-page-header__col-title">
+              <div class="slds-grid slds-gutter">
+                <div class="slds-col slds-size_6-of-12">
+                  <div class="slds-form-element slds-form-element_horizontal">
+                    <label class="slds-form-element__label" for="form-element">
+                      <font size="4">SELECT OBJECT :- </font>
+                    </label>
+                    <div class="slds-form-element__control">
+                      <div class="slds-select_container">
+                        <apex:selectList size="1" styleClass="slds-select" value="{! objectName}" id="header">
+                          <apex:selectOption itemValue="--none--" rendered="{!allObjects != null && allFields == null }" id="none1">
+                          </apex:selectOption>
+                          <apex:selectOption itemValue="--none--" rendered="{!allObjects != null && allFields != null}" itemDisabled="true" id="none2"></apex:selectOption>
+                          <apex:selectOptions value="{! allObjects}"> </apex:selectOptions>
+                          <apex:actionSupport event="onchange" action="{!  retriveFields}" reRender="form2, header" status="spinner" />
+                        </apex:selectList>
+                        <apex:actionStatus id="spinner">
+                          <apex:facet name="start">
+                            <div id="spinnerbackround" >
+                              &nbsp;
+                            </div>
+                            <div id="spinner" >
+
+                              <div class="demo-only" >
+                                <div class="slds-spinner_container">
+                                  <div role="status" class="slds-spinner slds-spinner_large slds-spinner_brand">
+                                    <span class="slds-assistive-text">Loading</span>
+                                    <div class="slds-spinner__dot-a"></div>
+                                    <div class="slds-spinner__dot-b"></div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+
+                          </apex:facet>
+                        </apex:actionStatus>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="slds-col slds-size_6-of-12" id="resetstyle">
+                  <apex:commandButton value="Reset" styleClass="slds-button slds-button_brand" action="{!reset}"  />
+
+                  <br/>
+
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+      </apex:form>
+      <apex:form id="form2">
+        <apex:outputPanel rendered="{!objectName != null}" id="fieldcol">
+          <div class="slds-grid slds-gutter">
+            <div class="slds-col slds-size_3-of-12" id="objectheadingstyle">
+              <div class="slds-form-element slds-form-element_label">
+
+                <label class="slds-form-element__label" for="form-element">
+                  <font size="4">{!objectNameHeading}:FIELDS </font>
+                </label>
+                <div class="slds-form-element__control">
+                  <div class="slds-select_container">
+                    <apex:selectList size="10" styleClass="slds-select" value="{!selectedFields}" multiselect="true" id="allfield">
+                      <apex:selectOption itemValue="--none--" rendered="{! allFields.size ==0 || allFields == null}"></apex:selectOption>
+                      <apex:selectOptions value="{! allFields}"> </apex:selectOptions>
+                    </apex:selectList>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="slds-col slds-size_3-of-12" id="arblockbstyle" >
+              <apex:CommandButton value="Add" action="{! selectFields}" reRender="fieldcol " disabled="{!allFields == null|| allFields.size ==0}" id="addbstyle"
+                styleClass="slds-button slds-button_outline-brand"  status="spinner">
+              </apex:CommandButton>
+              <apex:commandButton value="Remove" action="{! deselectFields}" reRender="fieldcol" disabled="{!selectedFieldsOption == null || selectedFieldsOption.size ==0}" id="removebstyle"
+                styleClass="slds-button slds-button_outline-brand" status="spinner">
+              </apex:commandButton>
+            </div>
+            <div class="slds-col slds-size_3-of-12" id="selfieldstyle">
+              <div class="slds-form-element slds-form-element_label">
+                <label class="slds-form-element__label" for="form-element">
+                  <font size="4">SELECTED:FIELDS </font>
+                </label>
+                <div class="slds-form-element__control">
+                  <div class="slds-select_container">
+                    <apex:selectList size="10" styleClass="slds-select" value="{! deselectedFields}" multiselect="true" id="selectlist">
+                      <apex:selectOption itemValue="--none--" rendered="{! selectedFieldsOption.size ==0 || selectedFieldsOption ==null }"></apex:selectOption>
+                      <apex:selectOptions value="{! selectedFieldsOption}"> </apex:selectOptions>
+                    </apex:selectList>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+
+            <div class="slds-col slds-size_3-of-12" id="processblockstyle">
+              <apex:commandButton value="Process" disabled="{!selectedFieldsOption == null || selectedFieldsOption.size ==0}" action="{!outputFieldsAndObject}"
+                reRender="output" styleClass="slds-button slds-button_brand" id="processbstyle" oncomplete="processQuery(); return false;"
+                status="spinner">
+              </apex:commandButton>
+            </div>
+          </div>
+        </apex:outputPanel>
+      </apex:form>
+    </div>
+  </apex:outputPanel>
+
+    
+   <apex:outputPanel id="output">
+      <apex:outputPanel rendered="{!fieldListOutput != null && fieldListOutput.size > 0 }" >
+        <c:Custom_Pagination_component objectString="{!objectNameOutput}" listofFieldsString="{!fieldListOutput}" />
+
+      </apex:outputPanel>
+    </apex:outputPanel>
+
+</apex:page>

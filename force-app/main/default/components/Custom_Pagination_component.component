@@ -1,0 +1,108 @@
+<apex:component controller="Custom_Pagination_Component_controller" allowDML="true">
+    <apex:attribute name="listofFieldsString" description="fields" assignTo="{!listofFields}" type="string[]"></apex:attribute>
+    <apex:attribute name="objectString" description="Name of object to retrive" assignTo="{!objectName}" type="string"></apex:attribute>
+    
+    <apex:pageBlock title="{!objectNameHeading} : RECORDS " id="pageb">
+        
+        
+        <apex:form >
+            <apex:actionFunction name="processQuery" action="{! processQuery}" reRender="pageb" status="spinner" oncomplete="checkPage()"/>
+            <apex:actionFunction name="addWrapperToMap" action="{!addWrapperToMap}" reRender="noselected,pageb" />
+            <apex:actionFunction name="singledelete" action="{!singledelete}" reRender="pageb"/>
+            <apex:actionFunction name="deleteSelected" action="{! deleteSelected}" reRender="pageb"/> 
+            
+            <apex:pageMessages id="showmsg"></apex:pageMessages>
+            <apex:panelGrid columns="4" style="float:Left;">
+                <apex:commandButton value="New Record" action="/{!keyPrefix}/e" styleClass="slds-button slds-button_outline-brand" status="spinner"
+                                    />
+                <apex:commandButton value="Delete Selected" onclick="confirmationMessageMass()"  oncomplete="checkPage()" reRender="pageb" disabled="{! noOfSelected == null || noOfSelected == 0}"
+                                    styleClass="slds-button slds-button_outline-brand" id="delsel" status="spinner" />
+                <apex:commandButton value="Download CSV" action="{!createCSV}"  oncomplete="downloadCsv('{! csvFile  }','{!objectNameHeading}') "
+                                    disabled="{! noOfSelected == null || noOfSelected == 0}" styleClass="slds-button slds-button_outline-brand" id="csvbutton"
+                                    status="spinner" /> 
+                
+                <apex:panelGroup style="float:Right; padding-right : 200px">
+                    <apex:repeat value="{!characterFilter}" var="character">
+                        <apex:commandLink value="{!character}    | " style="color:Blue;" action="{!first}" reRender="pageb">
+                            <apex:param name="likeChar" value="{!character}" assignTo="{!charLike}" />
+                        </apex:commandLink>
+                    </apex:repeat>
+                    <br/>
+                    <apex:outputPanel rendered="{!records.size == 0}">
+                        <apex:outputText value="No Records To Display !!" />
+                    </apex:outputPanel>
+                </apex:panelGroup>
+            </apex:panelGrid>
+            
+            <div style="overflow: scroll; width: 1500px; height: 300px;">
+                <apex:pageBlockTable value="{!records}" var="record" styleClass="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered"
+                                     id="pagebt" rendered="{! records != null && records.size > 0}">
+                    <apex:column styleClass="slds-col">
+                        <apex:facet name="header">
+                            <apex:inputCheckbox styleClass="selectAll" onclick="selectAll(this,'checks')" style="margin-left: 20px;">
+                            </apex:inputCheckbox>
+                        </apex:facet>
+                        <apex:inputCheckbox value="{! record.isSelected}" id="recsel" styleClass="checks">
+                            <apex:actionSupport event="onchange" action="{!addWrapperToMap}" oncomplete="checkOP(this)" reRender="csvbutton, noselected, delsel, recordoptions"
+                                                />
+                        </apex:inputCheckbox>
+                    </apex:column>
+                    
+                    <apex:column headerValue="Actions">
+                        <apex:commandLink value="Edit  |" action="/{!record.sobjectRecord.id}/e?retURL=/{!record.sobjectRecord.id}"></apex:commandLink>&nbsp;&nbsp;
+                        <apex:commandLink value="Del |"  style="Color:blue;" reRender="pageb"  oncomplete="confirmationMessage(), checkPage()" >
+                            <apex:param name="selectedSobject" value="{!record.SobjectRecord.ID}" assignTo="{! selectedSobject}" />
+                        </apex:commandLink>
+                    </apex:column>
+                    
+                    <apex:repeat value="{! listofFieldsDisplay }" var="f">
+                        <apex:column value="{!record.sobjectRecord[f]}" rendered="{! records.size !=0 && IF( records[0].nameOfObject == objectName  ,true,false)}"
+                                     id="records">
+                            <apex:facet name="header">
+                                <apex:commandLink value="{!mapContainingFieldslabels[f]}" action="{!sortInit}" reRender="pageb" oncomplete="checkPage()">
+                                    <apex:outputText rendered="{!assendingOrder == true && sortField == f }">&#x25B2;</apex:outputText>
+                                    <apex:outputText rendered="{!assendingOrder != true && sortField == f }">&#x25BC;</apex:outputText>
+                                    <apex:param name="sortField" value="{!f}" assignTo="{!sortField}" />
+                                </apex:commandLink>
+                            </apex:facet>
+                        </apex:column>
+                    </apex:repeat>
+                    
+                </apex:pageBlockTable>
+            </div>
+            
+            <apex:panelGrid columns="5" id="recordoptions">
+                <apex:selectList size="1" value="{!size}" multiselect="false" id="pagesize" >
+                    <apex:selectOptions value="{!paginationSizeOptions}"></apex:selectOptions>
+                    <apex:actionSupport event="onchange" action="{!first}" reRender="output" />
+                </apex:selectList>
+                <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                <apex:outputText value="Selected : {!noOfSelected} " styleClass="noselected" id="noselected" rendered="{! noOfSelected != null && noOfSelected != 0 }"></apex:outputText>
+                
+                <apex:outputPanel style="text-align:center;" layout="block" id="pannel">
+                    <apex:commandButton reRender="pageb" value="First" action="{!first}" disabled="{!hasPrevious != true}" styleClass="slds-button slds-button_outline-brand"
+                                        oncomplete="checkPage()" status="spinner" />
+                    <apex:commandButton reRender=" pageb" value="Previous" action="{!previous}" disabled="{!hasPrevious != true}" styleClass="slds-button slds-button_outline-brand"
+                                        oncomplete="checkPage()" status="spinner" />
+                    <apex:commandButton reRender=" pageb" value="Next" action="{!next}" disabled="{!hasNext != true}" styleClass="slds-button slds-button_outline-brand"
+                                        oncomplete="checkPage()" status="spinner" />
+                    <apex:commandButton reRender=" pageb" value="Last" action="{!last}" disabled="{!hasNext != true}" styleClass="slds-button slds-button_outline-brand"
+                                        oncomplete="checkPage()" status="spinner" />&nbsp;&nbsp;&nbsp;&nbsp;
+                </apex:outputPanel>
+                <apex:panelGroup id="stats" >
+                    
+                    <apex:outputText value="Total Records :{!noOfRecords}" ></apex:outputText>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <span>Page &nbsp;
+                        
+                    {! pageNumber} of {!totalPages} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                </span>&nbsp;&nbsp;
+                <apex:inputHidden value="{!pageNumber}" id="Hinput"></apex:inputHidden>
+            </apex:panelGroup>
+            
+        </apex:panelGrid>
+        
+    </apex:form>
+</apex:pageBlock>
+
+
+</apex:component>

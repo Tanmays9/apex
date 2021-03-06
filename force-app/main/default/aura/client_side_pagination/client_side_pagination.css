@@ -1,0 +1,45 @@
+.THIS.c-container {
+    border: 1px solid #d8dde6;
+    margin: 10px 0 20px 0;
+}
+.THIS.totalrecords {
+    font-size: 15px;
+}
+
+.THIS .custom-box {
+    text-align: center;
+    background-color: #f4f6f9;
+    padding: 1rem;
+    border: 1px solid #d8dde6;
+}
+/* .THIS.c-container .selectList {
+    width: 5%;
+} */
+/* .THIS.c-container div.slds-form_horizontal {
+    width: 5%;
+} */
+/* .THIS .slds-form_horizontal .slds-form-element__control {
+ 
+} */
+/* .THIS div p {
+    background-color: yellow;
+  } */
+/* .THIS .slds-form-element__control {
+    padding-left: 15%;
+    clear: none;
+} */
+.THIS .selectList > .slds-form-element__control {
+    /* padding-left : 25% !important; */
+    /* padding-left: clamp(110px, 25%, 130px) !important; */
+    /* padding-left: 110px !important; */
+    padding-left: 0px !important;
+}
+
+.THIS .slds-form-element__control > .slds-select_container{
+    /* min-width: 50px; 
+    max-width: 20%;  */
+    width: clamp(70px, 20%, 100px );
+}
+.THIS .hidden {
+    display: none;
+}

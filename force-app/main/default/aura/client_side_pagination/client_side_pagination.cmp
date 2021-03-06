@@ -1,0 +1,67 @@
+<aura:component controller="client_Side_Pagination_Controller">
+    <aura:attribute name="mydata" type="List" />
+    <aura:attribute name="records" type="List" />
+    <aura:attribute name="mycolumns" type="List" />
+    <aura:attribute name="totalrecords" type="Integer" />
+    <aura:attribute name="pageNo" type="Integer" default="1"/>
+    <aura:attribute name="totalpages" type="Integer" default="0"/>
+    <aura:attribute name="noOfRecordsDisplay" type="Integer" default="5" />
+    <aura:attribute name="sortedBy" type="String"/>
+    <aura:attribute name="defaultSortDirection" type="String" default="asc" />
+    <aura:attribute name="sortDirection" type="String" default="asc"/>
+    <aura:attribute name="selectedRows" type="List"/>
+    <aura:attribute name="selection" type="List" />
+
+    <aura:handler name="init" value="{! this }" action="{! c.init }" />
+    <aura:if isTrue="{! and(v.totalrecords.length != 0, v.records.length != 0)}">
+        <lightning:formattedText value="{!'Total '+ v.totalrecords +' Records'}" class="totalrecords" />
+        <lightning:datatable data="{! v.records }" columns="{! v.mycolumns }" keyField="Id" 
+        selectedRows="{!v.selectedRows}"
+        onrowselection="{!c.rowSelect}"
+        sortedBy="{! v.sortedBy }"
+        defaultSortDirection="{!v.defaultSortDirection}"
+        sortedDirection="{! v.sortDirection }"
+        onsort="{! c.handleSort }"/>
+        <div class="c-container">
+            <lightning:layout verticalAlign="center" horizontalAlign="spread">
+                <lightning:layoutItem flexibility="auto" padding="around-small">
+                    <div class="slds-form_horizontal">
+                        <span>Records Per Page: </span>
+                        <lightning:select class="selectList" name="select1" value="{!v.noOfRecordsDisplay}" variant="label-hidden" label="Records Per Page: " onchange="{!c.recordsPerPage}">
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </lightning:select>
+                    </div>
+
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" flexibility="auto">
+                    <lightning:buttonIcon iconName="utility:jump_to_left" variant="brand" alternativeText="First"
+                        title="Settings" value="{! 1}" disabled="{! v.pageNo == 1 }" onclick="{!c.pageNoChanged}" />
+                    <lightning:button label="Previous" variant="brand" value="{!v.pageNo - 1}" disabled="{! v.pageNo == 1 }" onclick="{!c.pageNoChanged}" />
+                    <lightning:button label="Next" variant="brand" value="{!v.pageNo + 1}"  disabled="{!v.totalpages lt (v.pageNo + 1)}" onclick="{!c.pageNoChanged}" />
+                    <lightning:buttonIcon iconName="utility:jump_to_right" variant="brand" alternativeText="Last"
+                        title="Settings" value="{! v.totalpages}" disabled="{! v.pageNo == v.totalpages }" onclick="{!c.pageNoChanged}" />
+                        &nbsp;&nbsp;&nbsp;&nbsp;
+                        <span>Page {!v.pageNo} / </span>
+                    <lightning:formattedNumber
+                        value="{!v.totalpages}" />
+                </lightning:layoutItem>
+                <lightning:layoutItem padding="around-small" flexibility="auto">
+                    <label><b>Pages : </b></label>
+                    <lightning:buttonGroup class="right-align" >
+                        <lightning:button aura:id="pageselect" label="{!(v.pageNo lt 3 || v.totalpages lt 5 )? 1 : ((v.pageNo > v.totalpages -2 )? v.totalpages -4 : v.pageNo -2) }" variant="{!(v.pageNo == 1)? 'Neutral' : 'brand'}" class="{! (v.totalpages lt 1)? 'hidden' : ''}"   onclick="{!c.pageNoSelected}"/>
+                        <lightning:button aura:id="pageselect" label="{!(v.pageNo lt 3 || v.totalpages lt 5)? 2 : ((v.pageNo > v.totalpages -2 )? v.totalpages -3 : v.pageNo -1) }" variant="{!(v.pageNo == 2)? 'Neutral' : 'brand'}" class="{! (v.totalpages lt 2)? 'hidden' : ''}"  onclick="{!c.pageNoSelected}"/>
+                        <lightning:button aura:id="pageselect" label="{!(v.pageNo lt 3 || v.totalpages lt 5)? 3 : ((v.pageNo > v.totalpages -2 )? v.totalpages -2 : v.pageNo)}" variant="{!(v.pageNo >2 &amp;&amp; v.pageNo lt v.totalpages - 1)? 'Neutral' : ( ( v.pageNo == 3 )?'Neutral': 'brand' )}" class="{! (v.totalpages lt 3)? 'hidden' : ''}"   onclick="{!c.pageNoSelected}"/>
+                        <lightning:button aura:id="pageselect" label="{!(v.pageNo lt 3 || v.totalpages lt 5)? 4 : ((v.pageNo > v.totalpages -2 )? v.totalpages -1 : v.pageNo +1)}" variant="{!(v.pageNo >3 &amp;&amp; v.pageNo == v.totalpages -1)? 'Neutral' : ( ( v.pageNo == 4 &amp;&amp; v.totalpages == 4  )?'Neutral': 'brand' )}" class="{! (v.totalpages lt 4)? 'hidden' : ''}"   onclick="{!c.pageNoSelected}"/>
+                        <lightning:button aura:id="pageselect" label="{!(v.pageNo lt 3 || v.totalpages lt 5)? 5 : ((v.pageNo > v.totalpages -2 )? v.totalpages : v.pageNo +2)}" variant="{!(v.pageNo >4 &amp;&amp; v.pageNo == v.totalpages)? 'Neutral' : ( ( v.pageNo == 5 &amp;&amp; v.totalpages == 5  )?'Neutral': 'brand' )}" class="{! (v.totalpages lt 5)? 'hidden' : ''}"  onclick="{!c.pageNoSelected}"/>          
+                    </lightning:buttonGroup>
+                </lightning:layoutItem>
+            </lightning:layout>
+
+        </div>
+    </aura:if>
+    
+</aura:component>

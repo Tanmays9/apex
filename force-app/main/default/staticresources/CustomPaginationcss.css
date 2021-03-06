@@ -1,0 +1,57 @@
+h1 {
+    color : red;
+}
+
+#myClass {
+    color : blue;
+}
+
+#headerstyle{
+    background-color :rgba(182, 174, 174, 0.30);
+    height:70px;
+}
+
+#spinnerbackround{
+    position: fixed;
+    top: 0; left: 0;
+    right: 0; bottom: 0;
+    opacity: 0.25; z-index: 1000;
+    background-color: gray;
+}
+#spinner{
+    position: fixed;
+    left: 0; top: 0; 
+    bottom: 0; right: 0; 
+    z-index: 1001; margin: 15% 50%;
+}
+.demo-only{
+    background-color:#16325c;height:6rem;
+}
+#resetstyle{
+    padding:5px 15px; margin-left:5%;
+}
+#objectheadingstyle{
+    padding: 30px; width:20%;
+}
+#arblockbstyle{
+    padding: 30px; width:20%; 
+    position: relative;left:5%; 
+    padding-top:12%;
+}
+#addbstyle{
+    padding:0px 28px; margin:10px; 
+}
+#removebstyle{
+    margin:10px;
+}
+#selfieldstyle{
+    padding: 30px; width:20%;
+}
+#processblockstyle{
+    padding: 30px; width:20%;
+    position: relative;left:5%;
+    padding-top:23.5%;
+}
+#processbstyle{
+    padding:0px 28px; margin:10px;
+}

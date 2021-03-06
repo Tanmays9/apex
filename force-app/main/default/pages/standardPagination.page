@@ -1,0 +1,257 @@
+<apex:page Controller="Standard_Pagination_Controller" docType="{! doctyper}" sidebar="false">
+    <apex:slds />
+    <apex:form id="page">
+        <script>
+            function checkOP(that) {
+
+                var check = document.getElementsByClassName("checks");
+                var option = that.checked;
+                var point = 0;
+
+                if (option) {
+                    for (var i = 0; i < check.length; i++) {
+                        (document.getElementsByClassName("checks")[i].checked) ? point++ : point--;
+                    }
+                    if (point == check.length) {
+                        document.getElementById('{!$Component.page.pageb.records.selectAll}').checked = option;
+                    }
+
+                } else {
+                    for (var i = 0; i < check.length; i++) {
+                        (document.getElementsByClassName("checks")[i].checked) ? point++ : point--;
+                    }
+                    if (point == check.length - 2) {
+                        document.getElementById('{!$Component.page.pageb.records.selectAll}').checked = option;
+
+                    }
+                }
+            }
+
+
+            function selectAll(that, nameofclass) {
+                var check = document.getElementsByClassName(nameofclass);
+                if (that.checked) {
+
+                    for (var i = 0; i < check.length; i++) {
+                        document.getElementsByClassName("checks")[i].checked = true;
+                    }
+                } else {
+                    for (var i = 0; i < check.length; i++) {
+                        document.getElementsByClassName("checks")[i].checked = false;
+                    }
+                }
+                addWrapperToMap();
+            }
+
+            function pagenochange(ev) {
+                if (ev.charCode >= 48 && ev.charCode <= 57 || ev.charCode == 13) {
+                    if (ev.charCode == 13) {
+                        pageNoChanged();
+                        return false;
+                    }
+                } else {
+                    return false;
+                }
+                return true;
+
+            }
+
+            function checkPage() {
+                var check = document.getElementsByClassName("checks");
+                var point = 0;
+                for (var i = 0; i < check.length; i++) {
+                    (document.getElementsByClassName("checks")[i].checked) ? point++ : point--;
+                }
+                if (point == check.length) {
+                    document.getElementsByClassName("selectAll")[0].checked = true;
+                } else {
+                    document.getElementsByClassName("selectAll")[0].checked = false;
+                }
+            }
+            function downloadCsv(inputer, filename) {
+                var hiddenElement = document.createElement('a');
+                hiddenElement.href = 'data:text/csv;charset=utf-8,' + encodeURI(inputer);
+                hiddenElement.target = '_blank';
+                hiddenElement.download = filename + ' RECORDS.csv';
+                hiddenElement.click();
+            }
+
+            function confirmationMessage(){
+                var retVal = confirm("Are you sure?");
+                if( retVal == true ) {
+                    singledelete();
+                  return true;
+               }
+            }
+            function confirmationMessageMass(){
+                var retVal = confirm("Are you sure?");
+                if( retVal == true ) {
+                    deleteSelected();
+                  return true;
+               }
+            }
+
+
+        </script>
+        <apex:actionFunction name="addWrapperToMap" action="{!addWrapperToMap}" reRender="noselected,pageb" />
+        <apex:actionFunction name="singledelete" action="{!singledelete}" reRender="page" oncomplete="checkPage()"/>
+        <apex:actionFunction name="deleteSelected" action="{! deleteSelected}" reRender="page" oncomplete="checkPage()"/>
+        <apex:actionStatus id="spinner">
+            <apex:facet name="start">
+                <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; opacity: 0.25; z-index: 1000; background-color: gray">
+                    &nbsp;
+                </div>
+                <div style="position: fixed; left: 0; top: 0; bottom: 0; right: 0; z-index: 1001; margin: 15% 50%">
+
+                    <div class="demo-only" style="background-color:#16325c;height:6rem">
+                        <div class="slds-spinner_container">
+                            <div role="status" class="slds-spinner slds-spinner_large slds-spinner_brand">
+                                <span class="slds-assistive-text">Loading</span>
+                                <div class="slds-spinner__dot-a"></div>
+                                <div class="slds-spinner__dot-b"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+            </apex:facet>
+        </apex:actionStatus>
+
+
+        <apex:pageBlock title="Contacts List" id="pageb">
+            <apex:pageMessages id="showmsg"></apex:pageMessages>
+            <apex:panelGrid columns="4" style="float:Left;">
+                <apex:commandButton value="New Record" action="{!URLFOR($Action.contact.NewContact)}" styleClass="slds-button slds-button_brand"
+                />
+                <apex:commandButton value="Delete Selected" reRender="page" disabled="{!noOfSelected == null || noOfSelected == 0 }"
+                    status="spinner" styleClass="slds-button slds-button_brand" onclick="confirmationMessageMass()" oncomplete="checkPage()" id="ds" />
+                <apex:commandButton value="Download CSV" action="{! createCSV}" oncomplete="downloadCsv('{! csvFile  }','Contact' )" reRender="page"
+                    disabled="{!noOfSelected == null || noOfSelected == 0 }" status="spinner" styleClass="slds-button slds-button_brand" id="csv"
+                />
+
+
+                <apex:panelGroup style="float:Right;">
+                    <apex:repeat value="{!characterFilter}" var="character">
+                        <apex:commandLink value="{!character}    | " style="color:Blue;" action="{! universalQuery}" reRender="page" oncomplete="checkPage()">
+                            <apex:param name="likeChar" value="{!character}" assignTo="{!charLike}" />
+                        </apex:commandLink>
+                    </apex:repeat>
+
+                </apex:panelGroup>
+
+
+            </apex:panelGrid>
+
+
+            <div style="overflow: scroll; width: 95%; height: 200px;">
+
+                <apex:pageBlockTable value="{! recordList }" var="wr" id="records">
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:inputCheckbox id="selectAll" styleClass="selectAll" onclick="selectAll(this,'checks')" style="margin-left: 20px;" />
+                            <!-- selectAll-->
+                        </apex:facet>
+                        <apex:inputCheckbox value="{! wr.isSelected}" id="recsel" styleClass="checks" style="margin-left: 24px;">
+                            <apex:actionSupport event="onchange" action="{!addWrapperToMap}" oncomplete="checkOP(this)" reRender="statpanel,ds,csv" />
+                            <!-- checkboxes-->
+                        </apex:inputCheckbox>
+                    </apex:column>
+                    <apex:column headerValue="Actions">
+                        <apex:commandLink value="EDit |" action="/{!wr.contactRecord.id}/e?retURL=/{!wr.contactRecord.id}" style="Color:blue;" />&nbsp;&nbsp;
+                        <apex:commandLink value="Del |" style="Color:blue;" reRender="page"  oncomplete="confirmationMessage(), checkPage()">
+                            <apex:param name="selectedContact" value="{!wr.contactRecord.ID}" assignTo="{! selectedContact}" />
+                        </apex:commandLink>
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:commandLink value="Name" action="{!sortInit}" reRender="page">
+                                <apex:outputText rendered="{!assendingOrder == true && sortField ='Name'}">&#x25B2;</apex:outputText>
+                                <apex:outputText rendered="{!assendingOrder != true && sortField ='Name'}">&#x25BC;</apex:outputText>
+                                <apex:param name="sortField" value="Name" assignTo="{!sortField}" />
+                            </apex:commandLink>
+                        </apex:facet>
+
+                        <apex:commandLink value="{! wr.contactRecord.name}" style="color:blue" action="/{!wr.contactRecord.ID}" />
+
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:commandLink value="First Name" action="{!sortInit}" reRender="page">
+                                <apex:outputText rendered="{!assendingOrder == true && sortField ='FirstName'}">&#x25B2;</apex:outputText>
+                                <apex:outputText rendered="{!assendingOrder != true && sortField ='FirstName'}">&#x25BC;</apex:outputText>
+                                <apex:param name="sortField" value="FirstName" assignTo="{!sortField}" />
+                            </apex:commandLink>
+                        </apex:facet>
+                        <apex:outputField value="{! wr.contactRecord.FirstName}" styleClass="checks" />
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:commandLink value="Last Name" action="{!sortInit}" reRender="page">
+                                <apex:outputText rendered="{!assendingOrder == true && sortField ='LastName'}">&#x25B2;</apex:outputText>
+                                <apex:outputText rendered="{!assendingOrder != true && sortField ='LastName'}">&#x25BC;</apex:outputText>
+                                <apex:param name="sortField" value="LastName" assignTo="{!sortField}" />
+                            </apex:commandLink>
+                        </apex:facet>
+                        <apex:outputField value="{! wr.contactRecord.LastName}" />
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:commandLink value="Email" action="{!sortInit}" reRender="page">
+                                <apex:outputText rendered="{!assendingOrder == true && sortField ='Email'}">&#x25B2;</apex:outputText>
+                                <apex:outputText rendered="{!assendingOrder != true && sortField ='Email'}">&#x25BC;</apex:outputText>
+                                <apex:param name="sortField" value="Email" assignTo="{!sortField}" />
+                            </apex:commandLink>
+                        </apex:facet>
+                        <apex:outputField value="{! wr.contactRecord.Email}" />
+                    </apex:column>
+                    <apex:column >
+                        <apex:facet name="header">
+                            <apex:commandLink value="Account Name" action="{!sortInit}" reRender="page">
+                                <apex:outputText rendered="{!assendingOrder == true && sortField ='Account.Name'}">&#x25B2;</apex:outputText>
+                                <apex:outputText rendered="{!assendingOrder != true && sortField ='Account.Name'}">&#x25BC;</apex:outputText>
+                                <apex:param name="sortField" value="Account.Name" assignTo="{!sortField}" />
+                            </apex:commandLink>
+                        </apex:facet>
+                        <apex:outputField value="{! wr.contactRecord.Account.name}" />
+                    </apex:column>
+                </apex:pageBlockTable>
+            </div>
+
+
+            <apex:panelGrid columns="5" id="statpanel">
+                <apex:selectList value="{!size}" size="1" multiselect="false" id="pagesize">
+                    <apex:selectOptions value="{!paginationSizeOptions}" />
+                    <apex:actionSupport event="onchange" action="{!pageSizeChange}" reRender="pagesize, page" />
+                </apex:selectList>
+                <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                <apex:outputText value="Selected : {! noOfSelected}" rendered="{! noOfSelected != null && noOfSelected != 0 }" id="noselected"></apex:outputText>
+                <apex:outputPanel style="text-align:center;" layout="block" id="pannel">
+                    <apex:commandButton reRender=" page" value="First" action="{! first}" disabled="{!hasPrevious != True }" oncomplete="checkPage()"
+                        styleClass="slds-button slds-button_brand" />
+                    <apex:commandButton reRender="page" value="Previous" action="{! previous}" disabled="{!hasPrevious != True }" oncomplete="checkPage()"
+                        styleClass="slds-button slds-button_brand" />
+                    <apex:commandButton reRender="page" value="Next" action="{! next}" disabled="{!hasNext != True }" oncomplete="checkPage()"
+                        styleClass="slds-button slds-button_brand" />
+                    <apex:commandButton reRender=" page" value="Last" action="{! last}" disabled="{!hasNext != True }" oncomplete="checkPage()"
+                        styleClass="slds-button slds-button_brand" />&nbsp;&nbsp;&nbsp;&nbsp;
+                </apex:outputPanel>
+                <apex:panelGroup >
+                    <apex:outputText value="Total Records : {!noOfRecords}"></apex:outputText>&nbsp;&nbsp;&nbsp;&nbsp;
+                    <span>Page &nbsp;
+                        <apex:input value="{! pagenumber}" onkeypress="return pagenochange(event);" style="width:5%">
+                            <apex:actionFunction name="pageNoChanged" action="{! pageNoChanged}" reRender="page" oncomplete="checkPage()" />
+                        </apex:input>
+                        of {!totalPages}
+                    </span>&nbsp;&nbsp;
+
+
+                </apex:panelGroup>
+
+            </apex:panelGrid>
+
+        </apex:pageBlock>
+
+
+    </apex:form>
+</apex:page>

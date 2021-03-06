@@ -1,0 +1,29 @@
+.THIS .blueicon svg {
+    fill : rgb(0, 112, 210);
+}
+.THIS.totalrecords {
+    font-size: 15px;
+}
+.THIS.c-container {
+    border: 1px solid #d8dde6;
+    margin: 10px 0 20px 0;
+}
+.THIS .selectList > .slds-form-element__control {
+    /* padding-left : 25% !important; */
+    /* padding-left: clamp(110px, 25%, 130px) !important; */
+    /* padding-left: 110px !important; */
+    padding-left: 0px !important;
+}
+
+.THIS .slds-form-element__control > .slds-select_container{
+    /* min-width: 50px; 
+    max-width: 20%;  */
+    width: clamp(70px, 20%, 100px );
+}
+.THIS .hidden {
+    display: none;
+}
+
+.THIS a.not-sortable {
+    pointer-events: none
+}

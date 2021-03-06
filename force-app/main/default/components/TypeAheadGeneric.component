@@ -1,0 +1,346 @@
+<apex:component controller="TypeAhead_Controller" allowDML="true">
+  <apex:attribute name="listofFieldsString" description="fields" assignTo="{!inputlistofFields}" type="string[]"></apex:attribute>
+  <apex:attribute name="objectString" description="Name of object to retrive" assignTo="{!inputobjectName}" type="string" ></apex:attribute>
+  <script src="https://code.jquery.com/jquery-1.8.2.js"></script>
+  <apex:stylesheet value="https://code.jquery.com/ui/1.9.1/themes/base/jquery-ui.css"></apex:stylesheet>
+  <script src="https://code.jquery.com/ui/1.9.0/jquery-ui.js"></script>
+  <style>
+    #table {
+      position: relative;
+    }
+
+    .slds-input {
+      width: 100%;
+      height: 60%;
+    }
+
+    tr {
+      height: 35px;
+    }
+    .slds-docked-form-footer{
+      visibility: hidden;
+    }
+    .valueChanged {
+      background-color: rgb(250, 255, 189);
+    }
+
+    #tableBody .slds-button {
+      color: black;
+    }
+
+    .slds-modal__container {}
+  </style>
+
+  <apex:form id="comp">
+    <apex:pageMessages id="showmsg"></apex:pageMessages>
+
+    <apex:actionFunction name="processQuery" action="{! processInput}" rerender="comp, values" />
+    <apex:actionFunction name="retriveSelectedRecord" action="{!retriveRecord}" rerender="comp, values" status="spinner"   oncomplete=" displayRecordValues();  reloadVar();">
+      <apex:param name="firstParam" assignTo="{!recordID}" value=""></apex:param>
+    </apex:actionFunction>
+    <apex:actionFunction name="saveRecord" action="{!saveRecords}" reRender="comp" >
+      <apex:param name="recordChanges" assignTo="{!updateRecordsValues}" value=""></apex:param>
+    </apex:actionFunction>
+    <apex:outputPanel id="inp" rendered="{!processComplete}">
+      <div class="slds-form-element">
+        <label class="slds-form-element__label" for="text-input-id-1">
+          Search {!objectNameHeading} </label>
+        <div class="slds-form-element__control">
+          <input type="text" id="text-input-id-1" placeholder="By {!listofFieldLabels[0]}" value="{!searchText}" class="slds-input" rerender='na' onkeypress="if (event.keyCode === 13) {return false;}"
+          />
+        </div>
+      </div>
+
+    </apex:outputPanel>
+    <apex:actionStatus id="spinner">
+      <apex:facet name="start">
+        <div id="spinnerbackround" >
+          &nbsp;
+        </div>
+        <div id="spinner" >
+
+          <div class="demo-only" >
+            <div class="slds-spinner_container">
+              <div role="status" class="slds-spinner slds-spinner_large slds-spinner_brand">
+                <span class="slds-assistive-text">Loading</span>
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+      </apex:facet>
+    </apex:actionStatus>
+  </apex:form>
+    <table class="slds-table  slds-table--fixed-layout slds-table--bordered" id="table">
+      <thead>
+        <tr class="slds-text-heading--label">
+
+          <!-- <th class="slds-is-sortable" scope="col">
+            <button class="slds-button">
+              <span class="slds-truncate">Opportunity Name</span>
+              </button>
+          </th>
+           -->
+
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <!-- <tr class="slds-hint-parent">
+        <th data-label="opportunity-name" role="row" ondblclick="console.log('good')">
+          <a href="#" class="slds-truncate">Acme 25</a>
+        </th>
+        <td data-label="account">
+          <a href="#" class="slds-truncate">Acme</a>
+        </td>
+        <td data-label="activity">
+          <span class="slds-truncate">4/14/2015</span>
+        </td>
+        <td data-label="stage">
+          
+        </td>
+      </tr> -->
+      </tbody>
+      <div class="slds-docked-form-footer"  >
+        <button type="button" class="slds-button slds-button_neutral" onclick="resetForm()">Cancel</button>
+        <button type="button" class="slds-button slds-button_brand" onclick="submitForm()">Save</button>
+      </div>
+    </table>
+    
+
+  <apex:outputPanel id="values">
+    <script>
+      var first = true;
+      function submitForm(){
+        let recordUpdateString ='';
+        arr = $('.slds-hint-parent').map(function(el, i) {
+          console.log(i);
+          var values = i.querySelectorAll('.valueChanged');
+          if(values.length<1){
+            return null;
+          }else{
+            recordUpdateString += el;
+          }
+          values.forEach(function(element){
+            console.log(element.firstChild.innerText);
+            console.log(element.getAttribute("data-label"));
+            console.log(el);
+            if(element.firstChild.innerText =='--'){
+              element.firstChild.innerText = '';
+            }
+            recordUpdateString += '#'+element.getAttribute("data-label") + '#' + element.firstChild.innerText ;
+          })
+          recordUpdateString += '##';
+          console.log(recordUpdateString);
+
+        }
+        )
+        saveRecord(recordUpdateString);
+        arr = $('span .valueChanged').map(function(el, i) {
+          i.classList.remove("valueChanged");
+        });
+        $(".slds-docked-form-footer").css( "visibility", "hidden" );
+      }
+      function resetForm(){
+        arr = $('span .valueChanged').map(function(el, i) {
+          var spanChild = i.firstChild;
+          spanChild.innerText = spanChild.getAttribute('oldvalue');
+          i.classList.remove("valueChanged");
+          $(".slds-docked-form-footer").css( "visibility", "hidden" );
+          console.log(i);
+            return $(el).text();
+        });
+      }
+
+
+      function editData(e) {
+        console.log(e);
+        console.log(e.currentTarget);
+        var currentEventTarget = e.currentTarget;
+        var tagCount = currentEventTarget.childElementCount;
+        if(tagCount > 1 ){
+          return;
+        }
+        var spanChild = currentEventTarget.firstChild;
+        console.log(spanChild);
+        spanChild.style.display = "none";
+        if (!spanChild.hasAttribute("oldvalue")) {
+          spanChild.setAttribute("oldvalue", spanChild.innerText);
+        }
+        var parentTag = currentEventTarget.parentNode;
+        let inputTag = document.createElement("input");
+        inputTag.setAttribute('onchange', "editComplete(event)");
+        inputTag.setAttribute('onkeyup', "if (event.keyCode === 13) {editComplete(event)}");
+        inputTag.type = "text";
+        inputTag.value = spanChild.innerText;
+        inputTag.placeholder = currentEventTarget.getAttribute("data-label");
+        inputTag.className = 'slds-input inputData';
+        currentEventTarget.appendChild(inputTag);
+      }
+
+      function editComplete(e) {
+        var currentEventTarget = e.currentTarget;
+        var parentTag = currentEventTarget.parentNode;
+        var spanChild = parentTag.firstChild;
+
+        if(currentEventTarget.value != spanChild.innerText){
+          parentTag.classList.add("valueChanged");
+          
+          $(".slds-docked-form-footer").css( "visibility", "visible" );
+          console.log(parentTag);
+        }
+        if(currentEventTarget.value == ''){
+          currentEventTarget.value = '--';
+        }
+        spanChild.innerText = currentEventTarget.value;
+        console.log(currentEventTarget.value)
+        console.log(spanChild);
+        spanChild.style.display = "initial";
+        currentEventTarget.remove();
+        
+      }
+
+      function displayRecordValues() {
+        try {
+          var headers = '{!listofFieldLabels}';
+          headers = headers.replace('[', '').replace(']', '').split(', ');
+          var recordData = '{!recordValues}';
+          recordData = recordData.replace('[', '').replace(']', '').split(', ');
+          var size = $('.slds-text-heading--label').children('th').length;
+          if(size <1){
+            createHeader();
+          }
+          console.log(size + 'th here ');
+          if(recordData[0] === '<duplicate>'){
+            return;
+          }
+          for(var i = 0; i < recordData.length ; i++){
+            console.log(recordData[i]);
+            if(recordData[i] === '<null>'){
+              recordData[i] = '--';
+            }
+          }
+          
+          var index = 0;
+          var tableRow = document.createElement("tr");
+          tableRow.className = "slds-hint-parent";
+          recordData.forEach(value => {
+            console.log(value);
+            var spanText = document.createElement("span");
+            spanText.className = "slds-truncate";
+            spanText.innerText = value;
+            console.log('complete 2' + spanText);
+            var tableData = document.createElement("td");
+            tableData.setAttribute('data-label',headers[index++]);
+            tableData.setAttribute('ondblclick', "editData(event)");
+            tableData.className = "recordData";
+            tableData.scope = "col";
+            tableData.appendChild(spanText);
+            tableRow.appendChild(tableData);
+            console.log('complete 3');
+            $("#tableBody").append(tableRow);
+            console.log(tableData);
+            console.log(value);
+            console.log(recordData);
+            console.log('complete');
+          });
+
+        } catch (e) {
+          console.log(e);
+        }
+
+      }
+    </script>
+  </apex:outputPanel>
+
+  <apex:outputPanel id="jquery" rendered="{!processComplete}">
+
+    <script>
+      var reloadVar;
+
+   
+        function createHeader() {
+          var headers = '{!listofFieldLabels}';
+          headers = headers.replace('[', '').replace(']', '').split(',');
+          headers.forEach(header => {
+            var spanText = document.createElement("span");
+            spanText.className = "slds-truncate";
+            spanText.innerText = header;
+            var buttonHeader = document.createElement("button");
+            buttonHeader.className = "slds-button";
+            buttonHeader.appendChild(spanText);
+            var tableHeader = document.createElement("th");
+            tableHeader.onclick = "console.log('ex');";
+            tableHeader.scope = "col";
+            tableHeader.appendChild(buttonHeader);
+            console.log(tableHeader);
+            console.log(document.getElementById("fieldnames"));
+            $(".slds-text-heading--label").append(tableHeader);
+            console.log($(".slds-text-heading--label").Html);
+            console.log(document.getElementById("test"));
+          });
+        }
+
+      $(reloadVar = function reloadP() {
+
+        try {
+
+
+
+          function autocomplete() {
+            $("#text-input-id-1").autocomplete({
+              minLength: 2,
+              source: function (request, response) {
+                var searchText = request.term;
+                console.log(searchText);
+                console.log(request);
+                console.log(response);
+                console.log('{!objectName}');
+                console.log('{!listofFields[0]}')
+                Visualforce.remoting.Manager.invokeAction(
+                  '{!$RemoteAction.TypeAhead_Controller.searchSuggestion}',
+                  searchText, '{!objectName}', '{!listofFields[0]}',
+                  function (result, event) {
+                    if (event.status) {
+                      if (typeof result === 'undefined' || result.length <= 0) {
+                        response(['No Record Found']);
+                      } else {
+                        console.log(result);
+                        response(result);
+                      }
+                    } else {
+                      response([]);
+                    }
+                  },
+                  { escape: true }
+                );
+              },
+              select: function (event, ui) {
+                if (ui.item.label != 'No Records Found') {
+                  $("#text-input-id-1").val(ui.item.label);
+                  console.log(ui.item.label);
+                  console.log(ui.item.value);
+                  retriveSelectedRecord(ui.item.value);
+                }
+                return false;
+              },
+              focus: function (event, ui) {
+                $("#text-input-id-1").val(ui.item.label);
+                return false;
+              }
+            });
+          }
+          autocomplete();
+
+        } catch (e) {
+          console.log(e);
+        }
+        // var test = ["tss","ass1","ges1","mes1","paj2"]
+
+      });
+
+    </script>
+  </apex:outputPanel>
+</apex:component>

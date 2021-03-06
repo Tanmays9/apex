@@ -1,0 +1,330 @@
+<apex:page standardController="Account" extensions="Upload_Files_On_ObjectExtension" >
+<apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js" />
+
+    <style>
+        .drop-zone{
+            max-width: 100%;
+            height: 150px;
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: auto;
+            font-family: 'Quicksand',sans-serif;
+            font-weight :500;
+            font-size: 30px;
+            cursor: pointer;
+            color:#cccccc;
+            border: 4px dashed #d4e2e0;
+            border-radius: 10px;
+            position: relative;
+            background: rgb(72, 107, 117);
+
+        }
+        .drop-zone--over {
+            border-style: solid;
+        }
+        .drop-zone__input{
+            border: 4px dashed #009578;
+            height: 150px;
+            width: 100%;
+            cursor: pointer;
+            opacity: 0;
+            
+        }
+        
+
+        .progressDiv {
+            width: 100%;
+            background-color: grey;
+        }
+        .drop-zone_prompt{
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        #myBar, .barDiv {
+            width: 0%;
+            height: 25px;
+            text-align: center; /* To center it horizontally (if you want) */
+            line-height: 25px; /* To center it vertically */
+            color: white;
+            background-color: rgb(90, 211, 114);
+            position: relative;
+            border-radius: 20px;
+        }
+        
+        #Upload {
+            visibility: hidden;
+            text-align: center;
+            font-family: 'Quicksand',sans-serif;
+            font-weight :200;
+            font-size: 15px;
+            margin-top: 20px;
+        	border: 3px rgb(160, 158, 158) solid; 
+        	height: auto;
+            padding: 10px;
+        }
+
+        #Upload ol {
+            text-align: left;
+            padding: 5px;
+        }
+
+        #Upload li {
+            padding: 10px;
+            list-style: none;
+        }
+        #Upload li span {
+            font-size: 15px;
+            font-weight :100;
+
+        }
+        #Upload li .status {
+            position: absolute;
+            left: 80%;
+            text-align: right;
+            color :rgb(61, 61, 160);
+        }
+        #Upload li .fileSize {
+            position: absolute;
+            left: 60%;
+            text-align: right;
+            color :rgb(61, 61, 160);
+        }
+        
+
+
+    </style>
+
+
+    <script>
+    
+    var positionIndex;
+    var doneUploading;
+    let maxFileSize = 4350000;
+    let maxStringSize = 6000000;
+    let maxRemotingMessage = 4122000;
+    var attachment = new Array();
+    let attachmentName = new Array();
+    let fileSize = new Array();
+    let progressEnd = 0 ;
+    let progressStart = 0;
+    let processNext;
+
+    function statsManage(index, failed){
+        let elementCount = document.getElementsByClassName("fileName").length -1;        
+        let elementSize = document.getElementsByClassName("fileSize")[elementCount];
+        let size = fileSize[index];
+        if(size < 1048576){
+            size = (size/1024).toFixed(2) + " KB ";
+        }else{
+            size = (size/1048576).toFixed(2) +" MB ";
+        }
+        elementSize.innerText = size ;
+        let elementName = document.getElementsByClassName("fileName")[elementCount];
+        elementName.innerText = attachmentName[index];
+    }
+
+    function fileRead(event){
+        try{
+            let processComplete = document.getElementById("Processing");
+            processComplete.innerText = event.target.files.length +" Files Processing  ...";
+            let fileReader = new FileReader();                
+            let elementItr;
+            let fileList = event.target.files;
+            let noFiles = fileList.length;
+            let i = 0;
+            processNext = function processFile(){
+                const file = fileList[i];
+                if(file){
+                    let uploadPanel = document.getElementById("Upload");
+                    uploadPanel.style.visibility = "visible";
+                    fileSize[i] = file.size;
+                    attachmentName[i] = file.name;
+                    elementItr = progressElements();
+                    statsManage(i);
+                    if(fileSize[i] <= maxFileSize){
+                        console.log('File Size supported : '+fileSize[i]+' Limit : '+maxFileSize +'file name : ' + file.name);
+                        // fileReader.onloadstart = function(e){
+                        //     progressEnd = 60;
+                        //     move(elementItr, false, i);
+                        // }
+
+                        fileReader.onloadend = function(e){
+                            attachment[i] = window.btoa(this.result);//base64 encoding
+                            console.log(this.result.length + 'result size');
+                            console.log(attachment[i].length+ 'base 64 size');
+                            i++;
+                            if(attachment[i-1].length < maxRemotingMessage ){
+                                console.log('inside');
+                                let elementBarCount = document.getElementsByClassName("barDiv").length -1;
+                                let elementbar = document.getElementsByClassName("barDiv")[elementBarCount];
+                                progressEnd = 60;
+                                move(elementbar, true, i-1);
+                            }else{
+                                console.log('File body too large : '+attachment[i-1].length+' Limit : '+maxRemotingMessage +'file name : ' + file.name);
+                                let elementCount = document.getElementsByClassName("status").length-1;
+                                let elementStatus = document.getElementsByClassName("status")[elementCount];
+                                elementStatus.innerText = " Failed ";
+                                elementStatus.style.color = "red";
+                                elementItr.innerText = 'File size not Supported ';
+                                elementItr.style.width = "100%";
+                                elementItr.style.backgroundColor = "red";
+                                elementItr.style.color = "white";
+                                processNext();
+                            }
+                        }
+                        fileReader.readAsBinaryString(file);
+                    }else{
+                        let size = fileSize[i];
+                        if(size < 1048576){
+                            size = (size/1024).toFixed(2) + " KB ";
+                        }else{
+                            size = (size/1048576).toFixed(2) +" MB ";
+                        }
+                        console.log('File Size not supported : '+fileSize[i]+' Limit : '+maxFileSize +'file name : ' + file.name);
+                        i++;
+                        let elementCount = document.getElementsByClassName("status").length-1;
+                        let elementStatus = document.getElementsByClassName("status")[elementCount];
+                        elementStatus.innerText = " Failed ";
+                        elementStatus.style.color = "red";
+                        elementItr.innerText = 'File Size not supported : '+size+' Limit : 4.35 MB' ;
+                        elementItr.style.width = "100%";
+                        elementItr.style.backgroundColor = "red";
+                        elementItr.style.color = "white";
+                        processNext();
+                    }
+                }else if(i >= noFiles){
+                    console.log(' process complete ');
+                    let processComplete = document.getElementById("Processing");
+                    processComplete.innerText = " Upload Complete ";
+                    setTimeout(function(){ 
+                        let isBoss = confirm("Process Complete Reload Page ?");
+                        if(isBoss){
+                            window.top.location.href = '/' + '{!Account.ID}';
+                        }
+                     }, 3000);
+                    ;
+                }else{
+                    alert(' Please Select at least 1 file ');
+                }
+            }
+            processNext();
+        }catch (e){
+            alert(e);
+        }
+    }
+
+    function uploadAttachment(j){
+        try {
+                console.log('file no '+ j);
+                let elementCount = document.getElementsByClassName("status").length-1;
+                let elementStatus = document.getElementsByClassName("status")[elementCount];
+                Visualforce.remoting.Manager.invokeAction(
+                    '{!$RemoteAction.Upload_Files_On_ObjectExtension.upload}',
+                    '{!Account.Id}', attachment[j], attachmentName[j],
+                    function(result, event){
+                        if(event.type === 'exception') {
+                            console.log("exception");
+                            console.log(event);
+                            elementStatus.innerText = " Failed : " + event.message;
+                            elementStatus.style.color = "red";
+                        }else if(event.status){
+                            console.log(result);
+                            console.log(event);
+                            
+                            elementStatus.innerText = " Successful ";
+                            elementStatus.style.color = "green";
+                            console.log(elementStatus);
+                        }
+                        let elementBarCount = document.getElementsByClassName("barDiv").length -1;
+                        let elementbar = document.getElementsByClassName("barDiv")[elementBarCount];
+                        progressEnd = 100;
+                        move(elementbar, false, j);
+                    },
+                    {buffer: false, escape: true, timeout: 120000}
+                );
+
+        }catch{
+            alert(e);
+        }
+        
+    }
+    function progressElements(){
+        let liTag = document.createElement("li");
+        let spanName = document.createElement("span");
+        spanName.className = "fileName";
+        spanName.innerText = "fileName";
+        liTag.appendChild(spanName);
+
+        let spanSize = document.createElement("span");
+        spanSize.className = "fileSize";
+        spanSize.innerText = "fileSize";
+        liTag.appendChild(spanSize);
+
+        let spanStatus = document.createElement("span");
+        spanStatus.className = "status";
+        spanStatus.innerText = "Processing";
+        liTag.appendChild(spanStatus);
+
+        let cdivTag = document.createElement("div");
+        cdivTag.id = 'Bar';
+        cdivTag.className = 'barDiv';
+        cdivTag.innerText = 'asd%';
+        liTag.appendChild(cdivTag);
+        document.getElementById("myProgress").appendChild(liTag);
+        console.log(liTag);
+        return cdivTag;
+    }
+
+    function move(elementInp, end, index) {
+        console.log(progressStart+ " : " + progressEnd +end);
+        var elem = elementInp;
+        if(end === true){
+            console.log(progressStart+ " : " + progressEnd + 'next');
+            
+            console.log('index value = '+ index);
+            if(index != undefined){
+                uploadAttachment(index);
+            }
+        }
+        var id = setInterval(frame, 10);
+        function frame() {
+            if (progressStart >= progressEnd) {
+                clearInterval(id);
+                console.log(progressStart+ " : " + progressEnd + 'complete' + end);
+                if(end === false && progressStart == 100){
+                    elementItr = null;
+                    progressStart = 0;
+                    progressEnd = 0;
+                    processNext();
+                }
+            } else {
+                progressStart++;
+                elem.style.width = progressStart + "%";
+                elem.innerHTML = progressStart + "%";
+                console.log(progressStart);
+                
+            }
+        }
+    }
+
+    </script>
+    <div class="drop-zone"  >
+        <label class="drop-zone_prompt"> Drop File Here Or Click To Select </label>
+        <input id="input" type="file" multiple="true" onchange="fileRead(event)" class="drop-zone__input" name="Myfile"> 
+        </input>
+    </div>
+    
+	<div id = "Upload">
+        <h1 id="Processing">Files Processing ...</h1>
+        <ol id="myProgress">
+            
+        </ol>
+    </div>
+    <apex:form >
+    </apex:form>
+	
+</apex:page>
