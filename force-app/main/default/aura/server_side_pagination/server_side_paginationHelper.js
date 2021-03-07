@@ -52,7 +52,8 @@
     }, []);
 
     records.forEach(record => {
-      record.forEach(params => {
+      console.log(record);
+      record.data.forEach(params => {
         if(currencyFields.includes(params.fieldName)){
           params.value = '$'+params.value;
         }
@@ -94,10 +95,23 @@
           'objectName' : cmp.get("v.objectName"),
           'fieldNames' : cmp.get("v.fieldsList"),
           'recordsCount' : cmp.get("v.noOfRecordsDisplay"),
-          'pageno' : cmp.get("v.pageNo")
+          'pageno' : cmp.get("v.pageNo"),
+          'sortBy' : cmp.get("v.sortedBy"),
+          'sortDirection' : cmp.get("v.sortDirection")
       };
   },
-  test: function(){
-    alert('her');
+  checkState : function(cmp, records){
+    var selectedRecords = cmp.get('v.selectedRecords');
+    var allSelected = true;
+    records.forEach(record => {
+      if(selectedRecords.includes(record.data[0].value)){
+        record.isChecked = true;
+      }
+      (record.isChecked)? allSelected : allSelected = false;
+    });
+    (allSelected)? document.querySelector('input.select-all').checked = true
+    : document.querySelector('input.select-all').checked = false;
+
+    return records;
   }
 });

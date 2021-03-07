@@ -9,7 +9,8 @@
   <aura:attribute name="pageNo" type="Integer" default="0" />
   <aura:attribute name="noOfRecordsDisplay" type="Integer" default="5" />
   <aura:attribute name="sortedBy" type="String"/>
-  <aura:attribute name="sortDirection" type="String" default="asc"/>
+  <aura:attribute name="sortDirection" type="String"/>
+  <aura:attribute name='selectedRecords' type="List"/>
 
   <aura:handler name="init" value="{! this}" action="{!c.init}" />
   <!-- <aura:if isTrue="{!not(empty(v.records))}"> -->
@@ -25,8 +26,8 @@
           <span id="column-group-header" class="slds-assistive-text">Choose a row</span>
           <div class="slds-th__action slds-th__action_form">
             <div class="slds-checkbox">
-              <input type="checkbox" name="options" id="checkbox-unique-id-297" value="checkbox-unique-id-297"
-                tabindex="-1" aria-labelledby="check-select-all-label column-group-header" />
+              <input aura:id="select-all" type="checkbox" class="select-all" name="options" id="checkbox-unique-id-297" value="select-all"
+                tabindex="-1" aria-labelledby="check-select-all-label column-group-header" onclick="{!c.checkBox}"/>
               <label class="slds-checkbox__label" for="checkbox-unique-id-297" id="check-select-all-label">
                 <span class="slds-checkbox_faux"></span>
                 <span class="slds-form-element__label slds-assistive-text">Select All</span>
@@ -41,10 +42,10 @@
               <span class="slds-assistive-text">Sort by: </span>
               <div class="slds-grid slds-grid_vertical-align-center slds-has-flexi-truncate">
                 <span class="slds-truncate data" title="{!field.fieldName}">{!field.label}</span>
-                <aura:if isTrue="{!field.sortable}">
+                <aura:if isTrue="{!field.sortable &amp;&amp; v.sortedBy == field.fieldName}">
                 <span class="slds-icon_container slds-icon-utility-arrowdown">
-                  <lightning:icon iconName="{!( v.sortedBy == field.fieldName ) ? 'utility:arrowdown':'utility:arrowup'}" class="blueicon" size="xx-small"
-                    alternativeText="Arrowdown!" title="Arrowdown" />
+                  <lightning:icon iconName="{!( v.sortedBy == field.fieldName &amp;&amp; v.sortDirection == 'desc'  ) ? 'utility:arrowdown':'utility:arrowup'}" class="blueicon" size="xx-small"
+                    alternativeText="Arrow!" title="Arrow" />
                 </span>
               </aura:if>
               </div>
@@ -68,19 +69,18 @@
     </aura:if>
     </thead>
     <tbody>
-      <aura:iteration items="{!v.records}" var="record">
+      <aura:iteration items="{!v.records}" var="record" indexVar="index">
         <tr aria-selected="false" class="slds-hint-parent">
           <td class="slds-text-align_right" role="gridcell">
             <div class="slds-checkbox">
-              <input type="checkbox" name="options" id="checkbox-01" value="checkbox-01" tabindex="-1"
-                aria-labelledby="check-button-label-01 column-group-header" />
-              <label class="slds-checkbox__label" for="checkbox-01" id="check-button-label-01">
+              <input aura:id="checkbox" class="checkbox-selector" type="checkbox" name="options" id="{! 'checkbox-0' + index}" value="{! record.data[0].value}" tabindex="{!index}" checked="{!record.isChecked}" aria-labelledby="check-button-label-02 column-group-header" onclick="{!c.checkBox}" />
+              <label class="slds-checkbox__label" for="{! 'checkbox-0' + index}" id="check-button-label-01">
                 <span class="slds-checkbox_faux"></span>
                 <span class="slds-form-element__label slds-assistive-text">Select item 1</span>
               </label>
             </div>
           </td>
-          <aura:iteration items="{!record}" var="field">
+          <aura:iteration items="{!record.data}" var="field">
             <aura:if isTrue="{! field.fieldName != 'Id'}">
               <td role="gridcell">
                 <div class="slds-truncate" title="{!field.fieldName}">{!field.value}</div>

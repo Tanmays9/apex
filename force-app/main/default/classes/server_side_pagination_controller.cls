@@ -3,25 +3,22 @@ public inherited sharing class server_side_pagination_controller {
     public static objectData getObjectData(string objectName ,List<String> fieldNames){
         system.debug(' request  ' + objectName + ' : ' +fieldNames);
         DescribeSObjectResult objectDescribe = ((SObject)(Type.forName(objectName).newInstance())).getSObjectType().getDescribe();
-        return new objectData(objectDescribe.getLabel(), getTotalRecords(objectName), fetchfields(objectName ,fieldNames ,objectDescribe) , getRecords(objectName ,fieldNames ,null ,null));   
+        return new objectData(objectDescribe.getLabel(), getTotalRecords(objectName), fetchfields(objectName ,fieldNames ,objectDescribe) , getRecords(objectName ,fieldNames ,5 , 1,null,null));   
     }
 
     @AuraEnabled
-    public static List<List<record>> getRecords(string objectName ,List<String> fieldNames ,Integer recordsCount ,Integer pageno){
-        system.debug(' Get Records ' + objectName + ' : ' +fieldNames + ' : '+ recordsCount + ' : '+ pageno);
-        if(recordsCount == null){
-            recordsCount = 5;
-        }
+    public static List<record> getRecords(string objectName ,List<String> fieldNames ,Integer recordsCount ,Integer pageno, String sortBy, String sortDirection){
+        system.debug(' Get Records ' + objectName + ' : ' +fieldNames + ' : '+ recordsCount + ' : '+ pageno + ' : '+ sortBy + ' : ' + sortDirection);
         Integer offset = 0;
-        if(pageno == null || pageno < 1){
+        if(pageno < 1){
             pageno = 1;
         }else {
             offset = (pageno -1)*recordsCount;
         }
-        return universalQuery(objectName, fieldNames, recordsCount, offset);
+        return universalQuery(objectName, fieldNames, recordsCount, offset, sortBy, sortDirection);
     }
 
-    public static List<List<record>> universalQuery(string objectName ,List<String> fieldNames, Integer recordsCount ,Integer offset) {
+    public static List<record> universalQuery(string objectName ,List<String> fieldNames, Integer recordsCount ,Integer offset ,String sortBy, String sortDirection) {
         string querySOQL = 'SELECT ';
         if(!fieldNames.contains('Id')){
             fieldNames.add(0, 'Id');
@@ -30,11 +27,14 @@ public inherited sharing class server_side_pagination_controller {
         }
         querySOQL += String.join(fieldNames, ' ,');
         querySOQL += ' FROM '+ objectName;
+        if(sortBy != null && sortDirection != null){
+            querySOQL += ' ORDER BY ' + sortBy + ((sortDirection  == 'asc')? ' ASC NULLS FIRST ': ' DESC NULLS LAST ' );
+        }
         querySOQL += ' LIMIT ' + recordsCount;
         querySOQL += ' OFFSET ' + offset;
         system.debug(' Query ' + querySOQL);
         List<SObject> con = Database.query(querySOQL);
-        List<List<record>> parsedRecords = parseRecordsToJson(fieldNames, con);
+        List<record> parsedRecords = parseRecordsToJson(fieldNames, con);
         system.debug(parsedRecords);
         return parsedRecords;
     }
@@ -60,24 +60,21 @@ public inherited sharing class server_side_pagination_controller {
     }
 
     @AuraEnabled
-    public static List<List<record>> parseRecordsToJson(list<string> fieldNames, List<SObject> records){ 
+    public static List<record> parseRecordsToJson(list<string> fieldNames, List<SObject> records){ 
         system.debug(fieldNames);
         system.debug(records);
-        List<List<record>> parsedRecords = new List<List<record>>(); 
+        List<record> parsedRecords = new List<record>(); 
         for(Sobject obj : records){
 
-            list<record> objRecords = new List<record>();
+            list<recordField> objRecords = new List<recordField>();
             for(string field : fieldNames){
                 string value = string.valueOf(obj.get(field));
                 if(value == 'null'){
                     value = '';
                 }
-                // if(objDescribeFields.get(field).getDescribe().getType() == schema.DisplayType.CURRENCY){
-                //     value = '$'+ value;
-                // }
-                objRecords.add(new record(field , value));
+                objRecords.add(new recordField(field , value));
             }
-            parsedRecords.add(objRecords);
+            parsedRecords.add(new record(false, objRecords));
         }
         return parsedRecords;
     }
@@ -86,8 +83,8 @@ public inherited sharing class server_side_pagination_controller {
         @AuraEnabled public string objectLabel;
         @AuraEnabled public Integer totalRecords;
         @AuraEnabled public List<field> fields;
-        @AuraEnabled public List<List<record>> records;
-        public objectData(string objectLabel, Integer totalRecords, List<field> fields, List<List<record>> records){
+        @AuraEnabled public List<record> records;
+        public objectData(string objectLabel, Integer totalRecords, List<field> fields, List<record> records){
             this.objectLabel = objectLabel;
             this.totalRecords = totalRecords; 
             this.fields = fields;
@@ -124,9 +121,19 @@ public inherited sharing class server_side_pagination_controller {
     }
 
     public class record {
+        @AuraEnabled public list<recordField> data;
+        @AuraEnabled public Boolean isChecked;
+        public record( Boolean isChecked, list<recordField> data){
+            this.isChecked = isChecked;
+            this.data = data;
+        }
+        
+    }
+
+    public class recordField {
         @AuraEnabled public string fieldName;
         @AuraEnabled public string value;
-        public record(string fieldName, string value){
+        public recordField(string fieldName, string value){
             this.fieldName = fieldName;
             this.value = value;
         }
